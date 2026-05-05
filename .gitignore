@@ -11,5 +11,8 @@ graphify-out/
 # Per-user Claude Code settings (permissions, sandbox prefs)
 .claude/settings.local.json
 
+# Personal reference (historical design doc, keep local only)
+proposed_architecture.md
+
 # IDE / editor
 .vscode/
