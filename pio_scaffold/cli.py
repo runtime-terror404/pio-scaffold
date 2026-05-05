@@ -232,6 +232,7 @@ def pico2(
         else:
             typer.echo(f"Warning: preset '{preset}' not found, ignoring.")
 
+    config = {k: v for k, v in config.items() if v is not None}
     config.setdefault("board", "weact")
     config.setdefault("framework", "arduino")
     config.setdefault("core", "earlephilhower")
@@ -346,6 +347,7 @@ def stm32(
         else:
             typer.echo(f"Warning: preset '{preset}' not found, ignoring.")
 
+    config = {k: v for k, v in config.items() if v is not None}
     config.setdefault("debug", "stlink")
     config.setdefault("swo", True)
     config.setdefault("baud", 115200)

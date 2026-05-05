@@ -9,4 +9,4 @@ __pycache__/
 .vscode/
 
 # Test artifacts
-report.md
+report*.md
