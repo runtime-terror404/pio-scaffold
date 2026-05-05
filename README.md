@@ -1,27 +1,45 @@
 # pio-scaffold
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Unified PlatformIO project scaffolding CLI. Generates ready-to-build PlatformIO projects for **Raspberry Pi Pico / RP2350 / RP2040** and **STM32 (CubeMX / CubeIDE)** from a single tool.
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Reference](#cli-reference)
+  - [Global flags](#global-flags)
+  - [`pio-scaffold` (wizard)](#pio-scaffold-no-subcommand)
+  - [`pio-scaffold pico2`](#pio-scaffold-pico2)
+  - [`pio-scaffold stm32`](#pio-scaffold-stm32)
+  - [`pio-scaffold presets`](#pio-scaffold-presets)
+- [Generated Files](#generated-files)
+- [Wizard Walkthrough](#wizard-walkthrough)
+- [Examples](#examples)
+- [Contributing](#contributing)
+- [License](#license)
+- [Author](#author)
 
 ## Requirements
 
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
-| **Python** | 3.8+ | Runtime (uses `typing`, `pathlib`, `dataclasses`) |
-| **typer** | ≥0.15 | CLI framework (`pip install typer`) |
+| **Python** | 3.8+ | Runtime (`typing`, `pathlib`, `dataclasses`) |
+| **typer** | ≥0.15 | CLI framework |
 | **PlatformIO Core** | any | `pio` must be on PATH ([install guide](https://platformio.org/install)) |
 | **git** | any | Only if using `--git` flag (optional) |
 
 ## Installation
 
-### One-liner (recommended)
+### One-liner
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<USER>/scripts/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/runtime-terror404/pio-scaffold/main/install.sh | sh
 ```
 
-The script checks dependencies, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks the binary into `~/.local/bin`, and verifies the install by printing `--help`. It's safe to re-run — it pulls updates if already cloned.
+The script checks Python 3.8+ and git, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks `pio-scaffold` into `~/.local/bin`, and verifies everything. Safe to re-run — it pulls updates if already cloned.
 
-After installation, restart your shell or run:
+After installing, restart your shell or run:
 
 ```bash
 export PATH="${HOME}/.local/bin:${PATH}"
@@ -32,12 +50,12 @@ export PATH="${HOME}/.local/bin:${PATH}"
 1. Verifies **Python 3.8+** — aborts if missing or too old
 2. Verifies **git** — aborts if missing
 3. Installs **typer** via `pip install --user` if not already present
-4. Checks for **PlatformIO CLI** (`pio`) — warns if missing, but does not abort (you can install it after)
-5. Clones the repo to `~/.local/share/pio-scaffold` (or `git pull` if already cloned)
+4. Checks for **PlatformIO CLI** (`pio`) — warns if missing, does not abort
+5. Clones to `~/.local/share/pio-scaffold` (or `git pull` if already cloned)
 6. Symlinks `pio-scaffold` → `~/.local/bin/pio-scaffold`
-7. Checks whether `~/.local/bin` is in `PATH` — prints a warning with the line to add to `~/.bashrc`/`~/.zshrc` if not
-8. Runs `pio-scaffold --help` to verify the install worked
-9. Reminds you to install PlatformIO if `pio` wasn't found in step 4
+7. Checks whether `~/.local/bin` is in `PATH`, prints the fix if not
+8. Runs `pio-scaffold --help` to verify
+9. Reminds you to install PlatformIO if `pio` wasn't found
 
 ### PlatformIO
 
@@ -45,13 +63,13 @@ The installer does **not** install PlatformIO — you need that separately:
 
 ```bash
 pip install platformio
-# or: https://platformio.org/install
+# Arch Linux: sudo pacman -S platformio
 ```
 
 ### Manual install
 
 ```bash
-git clone https://github.com/<USER>/scripts.git ~/.local/share/pio-scaffold
+git clone https://github.com/runtime-terror404/pio-scaffold.git ~/.local/share/pio-scaffold
 chmod +x ~/.local/share/pio-scaffold/pio-scaffold
 ln -s ~/.local/share/pio-scaffold/pio-scaffold ~/.local/bin/pio-scaffold
 pip install typer platformio
@@ -91,12 +109,18 @@ These apply to all commands and the wizard:
 | `--name TEXT` | — | cwd basename | Project name |
 | `--output PATH` | `-o` | `.` | Target output directory |
 | `--dry-run` | — | false | Print files that would be created, don't touch disk |
-| `--yes` | `-y` | false | Skip all confirmation prompts (non-interactive mode) |
+| `--yes` | `-y` | false | Skip all confirmation prompts |
 | `--preset TEXT` | `-p` | none | Load configuration from a saved preset |
 
 ### `pio-scaffold` (no subcommand)
 
-Launches the interactive wizard. The wizard walks you through platform selection, board variant, framework, debug probe, and all other options, then shows a summary before generating files.
+Launches the interactive wizard. Walks you through platform, board variant, framework, debug probe, and all other options, then shows a summary before generating files.
+
+If `pio` is missing from PATH, the tool exits immediately with:
+
+```
+Error: 'pio' command not found. Install PlatformIO: https://platformio.org/install
+```
 
 ### `pio-scaffold pico2`
 
@@ -115,7 +139,7 @@ pio-scaffold pico2 [OPTIONS]
 | `--baud INT` | — | `115200` | Serial monitor baud rate |
 | `--log` / `--no-log` | — | `--log` | Add `monitor_filters = time, log2file` |
 | `--libs TEXT` | `-l` | none | Comma-separated `lib_deps` (e.g. `"Adafruit NeoPixel, Wire"`) |
-| `--git` | — | false | Initialize git repo + create `.gitignore` + initial commit |
+| `--git` | — | false | Initialize git repo + `.gitignore` + initial commit |
 | `--ci` | — | false | Generate `.github/workflows/pio_build.yml` |
 | `--dry-run` | — | false | Preview without writing files |
 | `--yes` | `-y` | false | Skip confirmation prompt |
@@ -123,7 +147,7 @@ pio-scaffold pico2 [OPTIONS]
 | `--output PATH` | `-o` | `.` | Target output directory |
 | `--preset TEXT` | `-p` | none | Load from saved preset |
 
-#### Board variants
+**Board variants**
 
 | `--board` | Chip | PlatformIO `board` | Notes |
 |-----------|------|---------------------|-------|
@@ -146,13 +170,13 @@ pio-scaffold stm32 [OPTIONS]
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--ioc PATH` | — | auto-detect | Path to `.ioc` file (auto-detected from output dir if omitted) |
+| `--ioc PATH` | — | auto-detect | Path to `.ioc` file |
 | `--debug TEXT` | `-d` | `stlink` | Debug probe (see table below) |
 | `--swo` / `--no-swo` | — | `--swo` | Generate SWO trace script with dynamic HCLK |
 | `--baud INT` | — | `115200` | Serial monitor baud rate |
 | `--log` / `--no-log` | — | `--log` | Add `monitor_filters = time, log2file` |
 | `--libs TEXT` | `-l` | none | Comma-separated `lib_deps` |
-| `--git` | — | false | Initialize git repo + create `.gitignore` + initial commit |
+| `--git` | — | false | Initialize git repo + `.gitignore` + initial commit |
 | `--ci` | — | false | Generate `.github/workflows/pio_build.yml` |
 | `--dry-run` | — | false | Preview without writing files |
 | `--yes` | `-y` | false | Skip confirmation prompt |
@@ -160,7 +184,7 @@ pio-scaffold stm32 [OPTIONS]
 | `--output PATH` | `-o` | `.` | Target output directory |
 | `--preset TEXT` | `-p` | none | Load from saved preset |
 
-#### Debug probes
+**Debug probes**
 
 | `--debug` | Upload protocol | Debug tool | OpenOCD interface |
 |-----------|-----------------|------------|-------------------|
@@ -168,45 +192,38 @@ pio-scaffold stm32 [OPTIONS]
 | `cmsis-dap` | `cmsis-dap` | `cmsis-dap` | `interface/cmsis-dap.cfg` |
 | `jlink` | `jlink` | `jlink` | `interface/jlink.cfg` |
 
-#### .ioc handling
+**.ioc handling**
 
-When `--ioc` is not specified, `pio-scaffold` auto-detects `.ioc` files in the output directory:
+When `--ioc` is not specified, `.ioc` files are auto-detected in the output directory:
 
-- **No `.ioc` files**: warns and uses defaults (`genericSTM32F411CE` / `stm32f4x`)
-- **One `.ioc` file**: uses it automatically
-- **Multiple `.ioc` files**: presents a numbered picker (use `--yes` to auto-select the first)
+- **No `.ioc`**: warns and uses defaults (`genericSTM32F411CE` / `stm32f4x`)
+- **One `.ioc`**: uses it automatically
+- **Multiple `.ioc`**: presents a numbered picker (use `--yes` to auto-select the first)
 
 The `.ioc` file is parsed for:
-- `Mcu.UserName` → maps to PlatformIO `genericSTM32XXXXXX` board ID and `stm32{fam}x` family
-- `RCC.HCLKFreq_Value` → used as `-traceclk` in the SWO script (falls back to 100000000 with a comment if not found)
+- `Mcu.UserName` → PlatformIO `genericSTM32XXXXXX` board ID and `stm32{fam}x` family
+- `RCC.HCLKFreq_Value` → `-traceclk` in the SWO script (falls back to 100 MHz if not found)
+
+When `--ioc` points to a file outside the output directory, `src_dir` and `include_dir` are set as absolute paths pointing at the CubeMX project. When the `.ioc` is inside the output directory (the standard workflow), relative paths are used.
 
 ### `pio-scaffold presets`
 
-Save, load, list, and delete named configuration presets. Presets are stored in `~/.config/pio-scaffold/presets.json`.
+Save, load, list, and delete named presets. Stored in `~/.config/pio-scaffold/presets.json`.
 
 ```bash
-# Save a preset
 pio-scaffold presets save my-pico2 --board weact --platform pico2 --baud 115200
-
-# List saved presets
 pio-scaffold presets list
-
-# Load a preset (prints JSON)
 pio-scaffold presets load my-pico2
-
-# Use a preset when scaffolding
 pio-scaffold pico2 --preset my-pico2 --yes
-
-# Delete a preset
 pio-scaffold presets delete my-pico2
 pio-scaffold presets delete my-pico2 --force   # skip confirmation
 ```
 
-Presets store: `platform`, `board`, `framework`, `baud`, and `libs`. CLI flags always take precedence over preset values — you can use a preset as a base and override individual options.
+Presets store: `platform`, `board`, `framework`, `baud`, and `libs`. CLI flags take precedence over preset values — use a preset as a base and override individual options.
 
-## Files Generated
+## Generated Files
 
-### pico2 projects
+### pico2
 
 ```
 project-dir/
@@ -227,7 +244,7 @@ With `--ci`:
         └── pio_build.yml   # GitHub Actions: pio run on push/PR
 ```
 
-### stm32 projects
+### stm32
 
 ```
 project-dir/
@@ -236,9 +253,6 @@ project-dir/
 └── src/
     └── main.cpp            # Single-core Arduino boilerplate
 ```
-
-With `--git`: same `.gitignore` as above.  
-With `--ci`: same `.github/workflows/pio_build.yml` as above.
 
 ### platformio.ini contents
 
@@ -278,11 +292,11 @@ monitor_filters = time, log2file
 extra_scripts = swo_trace.py
 ```
 
-### SWO trace script (`swo_trace.py`)
+### SWO trace script
 
-Generated for STM32 projects (unless `--no-swo`). Parses `RCC.HCLKFreq_Value` from the `.ioc` file to set the correct `-traceclk` frequency. Registers a `swo_trace` custom target in PlatformIO that streams ITM SWO debug output via OpenOCD.
+Generated for STM32 projects unless `--no-swo`. Parses `RCC.HCLKFreq_Value` from the `.ioc` to set the correct `-traceclk` frequency, registering a `swo_trace` custom target in PlatformIO that streams ITM SWO debug output via OpenOCD.
 
-## Interactive Wizard
+## Wizard Walkthrough
 
 Running `pio-scaffold` without arguments launches a guided setup:
 
@@ -323,28 +337,10 @@ Select [1]:
 Proceed with these settings? [Y/n]:
 ```
 
-## Dependency Check
-
-Before generating anything, `pio-scaffold` verifies that `pio` is on `PATH`. If missing, it exits with:
-
-```
-Error: 'pio' command not found. Install PlatformIO: https://platformio.org/install
-```
-
-## Arch Linux Install Note
-
-On Arch Linux, install PlatformIO via:
-
-```bash
-yay -S platformio
-# or
-sudo pacman -S platformio
-```
-
 ## Examples
 
 ```bash
-# Minimal Pico2 project, USB-only, accept defaults
+# Minimal Pico2 project, accept defaults
 pio-scaffold pico2 --yes
 
 # RP2040 (original Pico) with custom name and output dir
@@ -369,26 +365,19 @@ pio-scaffold pico2 --envs dap --yes
 pio-scaffold pico2 --preset my-pico2 --baud 9600 --yes
 ```
 
-## Environment Variables
+## Contributing
 
-None required. Presets are stored at `~/.config/pio-scaffold/presets.json` (created automatically on first `presets save`).
+Bug reports and pull requests are welcome on GitHub. Before making changes to the CLI:
 
-## Differences from Legacy Scripts
+1. Read `pio_scaffold/platforms.py` for the platform/board registry
+2. Read `pio_scaffold/generators.py` for file generation logic
+3. Use `--dry-run` to test changes without touching the filesystem
+4. Follow existing patterns — `pathlib.Path` (not `os.path`), Typer for CLI, dataclasses for data
 
-`pio-scaffold` replaces `pio-pico2` and `pio-stm`. Key differences:
+## License
 
-| | Legacy scripts | pio-scaffold |
-|---|---|---|
-| Entry point | Two separate scripts | Single `pio-scaffold` CLI |
-| Discovery | Must know script names | `--help` shows everything |
-| Pre-flight | None | Checks `pio` on PATH |
-| Board variants | WeAct only (pico2) | 6 variants including RP2040 |
-| .ioc handling | First match only | Picker for multiple files |
-| `--dry-run` | Not available | Full preview support |
-| Presets | Not available | Save/load/list/delete |
-| Git init | Manual | `--git` flag |
-| CI workflow | Manual | `--ci` flag |
-| Libs | Manual after | `--libs` flag |
-| SWO HCLK | Hardcoded 100 MHz | Parsed from `.ioc` |
-| Monitor filters | Not included | `monitor_filters = time, log2file` |
-| Output dir | cwd only | `--output` / `-o` flag |
+MIT — see [LICENSE](LICENSE) for full text.
+
+## Author
+
+[runtime-terror404](https://github.com/runtime-terror404)

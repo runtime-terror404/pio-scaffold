@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── Config ────────────────────────────────────────────────────────────────
-REPO_URL="https://github.com/<USER>/scripts.git"   # TODO: update after first push
+REPO_URL="https://github.com/runtime-terror404/pio-scaffold.git"
 INSTALL_DIR="${HOME}/.local/share/pio-scaffold"
 BIN_DIR="${HOME}/.local/bin"
 BIN_NAME="pio-scaffold"
