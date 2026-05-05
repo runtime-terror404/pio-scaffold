@@ -19,7 +19,7 @@ Unified PlatformIO project scaffolding CLI. Generates ready-to-build PlatformIO 
 curl -fsSL https://raw.githubusercontent.com/<USER>/scripts/main/install.sh | sh
 ```
 
-The script checks Python 3.8+, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks the binary into `~/.local/bin`, and verifies the install. It's safe to re-run — it pulls updates if already cloned.
+The script checks dependencies, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks the binary into `~/.local/bin`, and verifies the install by printing `--help`. It's safe to re-run — it pulls updates if already cloned.
 
 After installation, restart your shell or run:
 
@@ -29,12 +29,15 @@ export PATH="${HOME}/.local/bin:${PATH}"
 
 ### What the installer does
 
-1. Verifies Python 3.8+ and git are present
-2. Installs `typer` via pip if missing
-3. Warns if PlatformIO CLI (`pio`) is not on PATH (you must install this separately)
-4. Clones (or pulls) the repo to `~/.local/share/pio-scaffold`
-5. Symlinks `pio-scaffold` to `~/.local/bin/pio-scaffold`
-6. Prints a usage summary
+1. Verifies **Python 3.8+** — aborts if missing or too old
+2. Verifies **git** — aborts if missing
+3. Installs **typer** via `pip install --user` if not already present
+4. Checks for **PlatformIO CLI** (`pio`) — warns if missing, but does not abort (you can install it after)
+5. Clones the repo to `~/.local/share/pio-scaffold` (or `git pull` if already cloned)
+6. Symlinks `pio-scaffold` → `~/.local/bin/pio-scaffold`
+7. Checks whether `~/.local/bin` is in `PATH` — prints a warning with the line to add to `~/.bashrc`/`~/.zshrc` if not
+8. Runs `pio-scaffold --help` to verify the install worked
+9. Reminds you to install PlatformIO if `pio` wasn't found in step 4
 
 ### PlatformIO
 
