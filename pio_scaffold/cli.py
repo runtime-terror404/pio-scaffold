@@ -299,6 +299,14 @@ def stm32(
         except ValueError as e:
             typer.echo(f"Warning: {e}")
 
+        # If .ioc is outside the output directory, point src_dir/include_dir
+        # at the CubeMX project with absolute paths so the code is found.
+        ioc_project_root = selected_ioc.resolve().parent
+        if ioc_project_root != output_resolved:
+            src_dir = str(ioc_project_root / "Core" / "Src")
+            include_dir = str(ioc_project_root / "Core" / "Inc")
+            typer.echo(f"  .ioc outside output dir — using CubeMX sources from: {ioc_project_root}")
+
         ioc_name = selected_ioc.stem
         if not any(gi.name == f"{ioc_name}.ioc" for gi in glob_dir.glob("*.ioc")):
             ioc_name = glob_dir.name
