@@ -10,8 +10,9 @@ Rules:
 
 ## pio-scaffold
 
-The unified PlatformIO scaffolding CLI (replacing `pio-pico2` and `pio-stm`). The full architecture spec lives in `proposed_architecture.md`.
+The unified PlatformIO scaffolding CLI. Entry point: `./pio-scaffold` → `pio_scaffold/` package.
 
 Rules:
-- Before starting any work on the unified pio-scaffold tool, read `proposed_architecture.md` first
-- Do not modify the legacy `pio-pico2` or `pio-stm` scripts — they will be removed once the unified tool replaces them
+- Before making changes, read `pio_scaffold/platforms.py` for the platform/board registry and `pio_scaffold/generators.py` for file generation logic
+- Full usage docs in `README.md`
+- The CLI is built with Typer; use `pathlib.Path` (not `os.path`) throughout
