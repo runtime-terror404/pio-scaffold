@@ -2,7 +2,17 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Unified PlatformIO project scaffolding CLI. Generates ready-to-build PlatformIO projects for **Raspberry Pi Pico / RP2350 / RP2040** and **STM32 (CubeMX / CubeIDE)** from a single tool.
+**The bridge between PlatformIO and the boards it leaves behind.**
+
+PlatformIO makes embedded development feel frictionless — until you pick up a board it wasn't built for. Maybe it's an STM32 where CubeMX handles pin configuration perfectly but ST wants you locked into their IDE. Maybe it's an RP2350 that didn't exist when the platform definitions were written.
+
+`pio-scaffold` gives you the PlatformIO experience on those boards:
+
+- **STM32** — Keep using CubeMX for what it's good at (pin config, clock trees) and PlatformIO for everything else. No CubeIDE needed. Written because ST's decision to split CubeIDE and CubeMX defeated the point of calling something "integrated."
+
+- **Pico2 / RP2350** — When PlatformIO only knew about RP2040, this generated a working project for the Pi Pico 2 and other RP2350-based boards.
+
+One tool, one workflow — `pio run --target upload` works the same no matter what's on your desk.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
