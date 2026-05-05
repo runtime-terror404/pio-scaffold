@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Knowledge graph (derived artifacts, rebuildable via `graphify update .`)
+graphify-out/
+
+# PlatformIO
+.pio/
+
+# Per-user Claude Code settings (permissions, sandbox prefs)
+.claude/settings.local.json
+
+# IDE / editor
+.vscode/
