@@ -155,14 +155,14 @@ def _generate_swo_script(platform: Platform, config: dict) -> str:
     ioc_path = config.get("ioc")
     if ioc_path:
         hclk = parse_hclk_from_ioc(ioc_path)
-        # If hclk is the default, add a comment
-        if hclk == 100000000:
-            hclk_comment = "  # default HCLK (no RCC.HCLKFreq_Value found in .ioc)"
+        if hclk is None:
+            hclk = 100000000
+            hclk_comment = " (default — RCC.HCLKFreq_Value not found in .ioc)"
         else:
-            hclk_comment = "  # parsed from RCC.HCLKFreq_Value in .ioc"
+            hclk_comment = f" (parsed from .ioc: {hclk} Hz)"
     else:
         hclk = 100000000
-        hclk_comment = "  # default (no .ioc provided)"
+        hclk_comment = " (default — no .ioc provided)"
 
     interface = probe.openocd_interface
     target = probe.openocd_target_fmt.format(fam=mcu_family)
@@ -170,7 +170,7 @@ def _generate_swo_script(platform: Platform, config: dict) -> str:
 
     return f'''Import("env")
 
-# OpenOCD SWO trace — dynamic HCLK from .ioc
+# OpenOCD SWO trace — HCLK={hclk}{hclk_comment}
 openocd_cmd = 'openocd -c "debug_level 1" -f {interface} -f {target} -c "init; reset halt; {tpiu_prefix}.tpiu configure -protocol uart -traceclk {hclk} -output /dev/stdout -formatter off; {tpiu_prefix}.tpiu enable; itm port 0 on; resume"'
 
 env.AddCustomTarget(

@@ -86,7 +86,10 @@ def _pick_ioc(glob_dir: Path, specified: Optional[Path], yes: bool) -> Optional[
 
 def _merge_config(cli_config: dict, preset_config: dict) -> dict:
     """Merge CLI config over preset config — CLI values take precedence."""
-    merged = {**preset_config, **{k: v for k, v in cli_config.items() if v is not None}}
+    merged = {
+        **{k: v for k, v in preset_config.items() if v is not None},
+        **{k: v for k, v in cli_config.items() if v is not None},
+    }
     return merged
 
 
@@ -176,20 +179,20 @@ def _maybe_git_init(output_dir: Path, project_name: str):
 @app.command()
 def pico2(
     ctx: typer.Context,
-    board: str = typer.Option(
-        "weact", "--board", "-b", help="Board variant: pico, pico2, weact, official, pimoroni, custom"
+    board: Optional[str] = typer.Option(
+        None, "--board", "-b", help="Board variant: pico, pico2, weact, official, pimoroni, custom"
     ),
-    framework: str = typer.Option(
-        "arduino", "--framework", "-f", help="Framework: arduino, pico-sdk"
+    framework: Optional[str] = typer.Option(
+        None, "--framework", "-f", help="Framework: arduino, pico-sdk"
     ),
     core: Optional[str] = typer.Option(
         None, "--core", "-c", help="Arduino core: earlephilhower, mbed"
     ),
-    envs: str = typer.Option(
-        "usb,dap", "--envs", "-e", help="Environments (comma-separated): usb, dap"
+    envs: Optional[str] = typer.Option(
+        None, "--envs", "-e", help="Environments (comma-separated): usb, dap"
     ),
-    baud: int = typer.Option(115200, "--baud", help="Serial monitor baud rate"),
-    log: bool = typer.Option(True, "--log/--no-log", help="Add monitor_filters (timestamp + log2file)"),
+    baud: Optional[int] = typer.Option(None, "--baud", help="Serial monitor baud rate"),
+    log: Optional[bool] = typer.Option(None, "--log/--no-log", help="Add monitor_filters (timestamp + log2file)"),
     libs: Optional[str] = typer.Option(
         None, "--libs", "-l", help="Comma-separated lib_deps"
     ),
@@ -208,26 +211,14 @@ def pico2(
     _check_pio()
     platform = get_platform("pico2")
 
-    board_ids = list(PICO2_BOARDS.keys())
-    if board not in board_ids:
-        typer.echo(f"Error: unknown board '{board}'. Choose: {', '.join(board_ids)}", err=True)
-        raise typer.Exit(code=1)
-
-    env_list = [e.strip() for e in envs.split(",") if e.strip() in ("usb", "dap")]
-    if not env_list:
-        typer.echo("Error: --envs must include 'usb' and/or 'dap'", err=True)
-        raise typer.Exit(code=1)
-
-    lib_list = [lib.strip() for lib in (libs or "").split(",") if lib.strip()]
-
     config = {
         "board": board,
         "framework": framework,
-        "core": core or "earlephilhower",
-        "envs": env_list,
+        "core": core,
+        "envs": envs,
         "baud": baud,
         "log": log,
-        "libs": lib_list,
+        "libs": libs,
         "git": git,
         "ci": ci,
         "name": name or output.resolve().name,
@@ -241,6 +232,31 @@ def pico2(
         else:
             typer.echo(f"Warning: preset '{preset}' not found, ignoring.")
 
+    config.setdefault("board", "weact")
+    config.setdefault("framework", "arduino")
+    config.setdefault("core", "earlephilhower")
+    config.setdefault("envs", "usb,dap")
+    config.setdefault("baud", 115200)
+    config.setdefault("log", True)
+    config.setdefault("libs", "")
+
+    board_ids = list(PICO2_BOARDS.keys())
+    if config["board"] not in board_ids:
+        typer.echo(f"Error: unknown board '{config['board']}'. Choose: {', '.join(board_ids)}", err=True)
+        raise typer.Exit(code=1)
+
+    env_list = [e.strip() for e in config["envs"].split(",") if e.strip() in ("usb", "dap")]
+    if not env_list:
+        typer.echo("Error: --envs must include 'usb' and/or 'dap'", err=True)
+        raise typer.Exit(code=1)
+    config["envs"] = env_list
+
+    libs_val = config["libs"]
+    if isinstance(libs_val, list):
+        config["libs"] = libs_val
+    else:
+        config["libs"] = [lib.strip() for lib in libs_val.split(",") if lib.strip()]
+
     _execute(platform, config, dry_run, yes)
 
 
@@ -252,12 +268,12 @@ def stm32(
     ioc: Optional[Path] = typer.Option(
         None, "--ioc", help="Path to .ioc file (auto-detected if omitted)"
     ),
-    debug: str = typer.Option(
-        "stlink", "--debug", "-d", help="Debug probe: stlink, cmsis-dap, jlink"
+    debug: Optional[str] = typer.Option(
+        None, "--debug", "-d", help="Debug probe: stlink, cmsis-dap, jlink"
     ),
-    swo: bool = typer.Option(True, "--swo/--no-swo", help="Generate SWO trace script"),
-    baud: int = typer.Option(115200, "--baud", help="Serial monitor baud rate"),
-    log: bool = typer.Option(True, "--log/--no-log", help="Add monitor_filters (timestamp + log2file)"),
+    swo: Optional[bool] = typer.Option(None, "--swo/--no-swo", help="Generate SWO trace script"),
+    baud: Optional[int] = typer.Option(None, "--baud", help="Serial monitor baud rate"),
+    log: Optional[bool] = typer.Option(None, "--log/--no-log", help="Add monitor_filters (timestamp + log2file)"),
     libs: Optional[str] = typer.Option(
         None, "--libs", "-l", help="Comma-separated lib_deps"
     ),
@@ -275,11 +291,6 @@ def stm32(
 ):
     _check_pio()
     platform = get_platform("stm32")
-
-    if debug not in STM32_DEBUG_PROBES:
-        valid = ", ".join(STM32_DEBUG_PROBES.keys())
-        typer.echo(f"Error: unknown debug probe '{debug}'. Choose: {valid}", err=True)
-        raise typer.Exit(code=1)
 
     output_resolved = output.resolve()
     glob_dir = output_resolved if output_resolved.is_dir() else output_resolved.parent
@@ -299,8 +310,6 @@ def stm32(
         except ValueError as e:
             typer.echo(f"Warning: {e}")
 
-        # If .ioc is outside the output directory, point src_dir/include_dir
-        # at the CubeMX project with absolute paths so the code is found.
         ioc_project_root = selected_ioc.resolve().parent
         if ioc_project_root != output_resolved:
             src_dir = str(ioc_project_root / "Core" / "Src")
@@ -313,8 +322,6 @@ def stm32(
     else:
         ioc_name = glob_dir.name
 
-    lib_list = [lib.strip() for lib in (libs or "").split(",") if lib.strip()]
-
     config = {
         "ioc": selected_ioc,
         "board_id": board_id,
@@ -323,7 +330,7 @@ def stm32(
         "swo": swo,
         "baud": baud,
         "log": log,
-        "libs": lib_list,
+        "libs": libs,
         "git": git,
         "ci": ci,
         "name": name or ioc_name,
@@ -338,6 +345,23 @@ def stm32(
             config = _merge_config(config, presets_data[preset])
         else:
             typer.echo(f"Warning: preset '{preset}' not found, ignoring.")
+
+    config.setdefault("debug", "stlink")
+    config.setdefault("swo", True)
+    config.setdefault("baud", 115200)
+    config.setdefault("log", True)
+    config.setdefault("libs", "")
+
+    if config["debug"] not in STM32_DEBUG_PROBES:
+        valid = ", ".join(STM32_DEBUG_PROBES.keys())
+        typer.echo(f"Error: unknown debug probe '{config['debug']}'. Choose: {valid}", err=True)
+        raise typer.Exit(code=1)
+
+    libs_val = config["libs"]
+    if isinstance(libs_val, list):
+        config["libs"] = libs_val
+    else:
+        config["libs"] = [lib.strip() for lib in libs_val.split(",") if lib.strip()]
 
     _execute(platform, config, dry_run, yes)
 

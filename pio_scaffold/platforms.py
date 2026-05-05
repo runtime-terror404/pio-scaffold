@@ -164,10 +164,10 @@ def parse_mcu_from_ioc(ioc_path: Path) -> tuple[str, str, str]:
     return mcu_name, board_id, mcu_family
 
 
-def parse_hclk_from_ioc(ioc_path: Path) -> int:
-    """Parse RCC.HCLKFreq_Value from .ioc; fallback 100000000."""
+def parse_hclk_from_ioc(ioc_path: Path) -> Optional[int]:
+    """Parse RCC.HCLKFreq_Value from .ioc; None if not found."""
     content = ioc_path.read_text(encoding="utf-8", errors="replace")
     hclk_match = _IOC_HCLK_RE.search(content)
     if hclk_match:
         return int(hclk_match.group(1))
-    return 100000000
+    return None

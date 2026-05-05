@@ -7,3 +7,6 @@ __pycache__/
 
 # IDE / editor
 .vscode/
+
+# Test artifacts
+report.md
