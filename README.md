@@ -13,27 +13,45 @@ Unified PlatformIO project scaffolding CLI. Generates ready-to-build PlatformIO 
 
 ## Installation
 
-### 1. Install PlatformIO
+### One-liner (recommended)
 
 ```bash
-# Recommended: VS Code + PlatformIO extension
-# Or CLI-only:
+curl -fsSL https://raw.githubusercontent.com/<USER>/scripts/main/install.sh | sh
+```
+
+The script checks Python 3.8+, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks the binary into `~/.local/bin`, and verifies the install. It's safe to re-run — it pulls updates if already cloned.
+
+After installation, restart your shell or run:
+
+```bash
+export PATH="${HOME}/.local/bin:${PATH}"
+```
+
+### What the installer does
+
+1. Verifies Python 3.8+ and git are present
+2. Installs `typer` via pip if missing
+3. Warns if PlatformIO CLI (`pio`) is not on PATH (you must install this separately)
+4. Clones (or pulls) the repo to `~/.local/share/pio-scaffold`
+5. Symlinks `pio-scaffold` to `~/.local/bin/pio-scaffold`
+6. Prints a usage summary
+
+### PlatformIO
+
+The installer does **not** install PlatformIO — you need that separately:
+
+```bash
 pip install platformio
+# or: https://platformio.org/install
 ```
 
-### 2. Install typer
+### Manual install
 
 ```bash
-pip install typer
-```
-
-### 3. Install pio-scaffold
-
-```bash
-# Clone or copy the scripts repo, then symlink the entry script into PATH:
-cd ~/Projects/scripts
-chmod +x pio-scaffold
-ln -s "$(pwd)/pio-scaffold" ~/.local/bin/pio-scaffold
+git clone https://github.com/<USER>/scripts.git ~/.local/share/pio-scaffold
+chmod +x ~/.local/share/pio-scaffold/pio-scaffold
+ln -s ~/.local/share/pio-scaffold/pio-scaffold ~/.local/bin/pio-scaffold
+pip install typer platformio
 ```
 
 Verify:
