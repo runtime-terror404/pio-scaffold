@@ -2,18 +2,8 @@
 __pycache__/
 *.pyc
 
-# Knowledge graph (derived artifacts, rebuildable via `graphify update .`)
-graphify-out/
-
 # PlatformIO
 .pio/
-
-# Per-user Claude Code settings (permissions, sandbox prefs)
-.claude/settings.local.json
-
-# Personal reference (historical design doc, keep local only)
-proposed_architecture.md
-CLAUDE.md
 
 # IDE / editor
 .vscode/
