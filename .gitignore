@@ -13,6 +13,7 @@ graphify-out/
 
 # Personal reference (historical design doc, keep local only)
 proposed_architecture.md
+CLAUDE.md
 
 # IDE / editor
 .vscode/
