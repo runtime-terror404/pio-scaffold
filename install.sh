@@ -44,16 +44,6 @@ if ! command -v git >/dev/null 2>&1; then
 fi
 info "git — OK"
 
-# ── Install typer ─────────────────────────────────────────────────────────
-
-if ! python3 -c "import typer" >/dev/null 2>&1; then
-    warn "typer not installed. Installing..."
-    python3 -m pip install --user typer || abort "Failed to install typer. Try: pip install typer"
-    info "typer installed"
-else
-    info "typer — OK ($(python3 -c 'import typer; print(typer.__version__)'))"
-fi
-
 # ── Check PlatformIO ──────────────────────────────────────────────────────
 
 if ! command -v pio >/dev/null 2>&1; then
@@ -76,18 +66,36 @@ else
     git clone "${REPO_URL}" "${INSTALL_DIR}" || abort "Failed to clone repo. Check the URL: ${REPO_URL}"
 fi
 
-# ── Symlink into PATH ────────────────────────────────────────────────────
+# ── Set up virtual environment ────────────────────────────────────────────
+
+VENV_DIR="${INSTALL_DIR}/.venv"
+if [ ! -d "${VENV_DIR}" ]; then
+    info "Creating virtual environment at ${VENV_DIR}..."
+    python3 -m venv "${VENV_DIR}" || abort "Failed to create venv"
+fi
+info "Installing dependencies into venv..."
+"${VENV_DIR}/bin/pip" install -q -r "${INSTALL_DIR}/requirements.txt" || abort "Failed to install dependencies"
+info "venv — OK"
+
+# ── Install launcher into PATH ─────────────────────────────────────────────
 
 mkdir -p "${BIN_DIR}"
 
 if [ -L "${BIN_DIR}/${BIN_NAME}" ] || [ -f "${BIN_DIR}/${BIN_NAME}" ]; then
-    info "Removing existing ${BIN_NAME} symlink..."
+    info "Removing existing ${BIN_NAME} launcher..."
     rm -f "${BIN_DIR}/${BIN_NAME}"
 fi
 
-ln -s "${INSTALL_DIR}/pio-scaffold" "${BIN_DIR}/${BIN_NAME}"
-chmod +x "${INSTALL_DIR}/pio-scaffold"
-info "Linked ${INSTALL_DIR}/pio-scaffold → ${BIN_DIR}/${BIN_NAME}"
+cat > "${BIN_DIR}/${BIN_NAME}" << PYEOF
+#!${VENV_DIR}/bin/python3
+import sys
+sys.path.insert(0, "${INSTALL_DIR}")
+from pio_scaffold.cli import app
+
+app()
+PYEOF
+chmod +x "${BIN_DIR}/${BIN_NAME}"
+info "Launcher written to ${BIN_DIR}/${BIN_NAME}"
 
 # ── PATH check ────────────────────────────────────────────────────────────
 
