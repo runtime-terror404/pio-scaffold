@@ -85,8 +85,7 @@ def _generate_ini_pico2(platform: Platform, config: dict) -> str:
     if "dap" in envs:
         lines.append("; Debug environment: Flashes via SWD DAPLink")
         lines.append("[env:dap]")
-        lines.append("upload_protocol = cmsis-dap")
-        lines.append("debug_tool = cmsis-dap")
+        lines.append("; upload_protocol = cmsis-dap")
         lines.append("")
 
     return "\n".join(lines)
@@ -105,15 +104,12 @@ def _generate_ini_stm32(platform: Platform, config: dict) -> str:
     probe = platform.debug_probes.get(debug, platform.debug_probes["stlink"])
 
     lines = ["[platformio]"]
-
-    # CubeMX folder routing
-    src_dir = config.get("src_dir", "Core/Src")
-    include_dir = config.get("include_dir", "Core/Inc")
-    lines.append(f"src_dir = {src_dir}")
-    lines.append(f"include_dir = {include_dir}")
+    lines.append(f"src_dir = {config.get('src_dir', 'Core/Src')}")
+    lines.append(f"include_dir = {config.get('include_dir', 'Core/Inc')}")
     lines.append("")
 
     lines.append("[env]")
+    lines.append("platform = ststm32")
     lines.append(f"board = {board_id}")
     lines.append("framework = stm32cube")
     lines.append(f"upload_protocol = {probe.upload_protocol}")
@@ -126,6 +122,9 @@ def _generate_ini_stm32(platform: Platform, config: dict) -> str:
         lines.append(f"lib_deps = {', '.join(libs)}")
     if swo:
         lines.append("extra_scripts = swo_trace.py")
+    lines.append("")
+
+    lines.append(f"[env:{board_id}]")
     lines.append("")
 
     return "\n".join(lines)
