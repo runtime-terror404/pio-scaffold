@@ -35,7 +35,7 @@ One tool, one workflow — `pio run --target upload` works the same no matter wh
 | Requirement | Version | Purpose |
 |-------------|---------|---------|
 | **Python** | 3.8+ | Runtime (`typing`, `pathlib`, `dataclasses`) |
-| **typer** | ≥0.15 | CLI framework |
+| **typer** | ≥0.9.0 | CLI framework |
 | **PlatformIO Core** | any | `pio` must be on PATH ([install guide](https://platformio.org/install)) |
 | **git** | any | Only if using `--git` flag (optional) |
 
@@ -47,7 +47,7 @@ One tool, one workflow — `pio run --target upload` works the same no matter wh
 curl -fsSL https://raw.githubusercontent.com/runtime-terror404/pio-scaffold/main/install.sh | sh
 ```
 
-The script checks Python 3.8+ and git, installs typer if missing, clones the repo to `~/.local/share/pio-scaffold`, symlinks `pio-scaffold` into `~/.local/bin`, and verifies everything. Safe to re-run — it pulls updates if already cloned.
+The script checks Python 3.8+ and git, clones the repo to `~/.local/share/pio-scaffold`, creates a `.venv` with dependencies, writes a standalone launcher to `~/.local/bin/pio-scaffold`, and verifies everything. Safe to re-run — it pulls updates if already cloned.
 
 After installing, restart your shell or run:
 
@@ -59,10 +59,10 @@ export PATH="${HOME}/.local/bin:${PATH}"
 
 1. Verifies **Python 3.8+** — aborts if missing or too old
 2. Verifies **git** — aborts if missing
-3. Installs **typer** via `pip install --user` if not already present
-4. Checks for **PlatformIO CLI** (`pio`) — warns if missing, does not abort
-5. Clones to `~/.local/share/pio-scaffold` (or `git pull` if already cloned)
-6. Symlinks `pio-scaffold` → `~/.local/bin/pio-scaffold`
+3. Checks for **PlatformIO CLI** (`pio`) — warns if missing, does not abort
+4. Clones to `~/.local/share/pio-scaffold` (or `git pull` if already cloned)
+5. Creates a `.venv` inside the install directory and installs dependencies from `requirements.txt`
+6. Writes a standalone launcher at `~/.local/bin/pio-scaffold` (not a symlink — the launcher uses the venv's Python)
 7. Checks whether `~/.local/bin` is in `PATH`, prints the fix if not
 8. Runs `pio-scaffold --help` to verify
 9. Reminds you to install PlatformIO if `pio` wasn't found
@@ -80,9 +80,16 @@ pip install platformio
 
 ```bash
 git clone https://github.com/runtime-terror404/pio-scaffold.git ~/.local/share/pio-scaffold
-chmod +x ~/.local/share/pio-scaffold/pio-scaffold
-ln -s ~/.local/share/pio-scaffold/pio-scaffold ~/.local/bin/pio-scaffold
-pip install typer platformio
+python3 -m venv ~/.local/share/pio-scaffold/.venv
+~/.local/share/pio-scaffold/.venv/bin/pip install -r ~/.local/share/pio-scaffold/requirements.txt
+cat > ~/.local/bin/pio-scaffold << 'EOF'
+#!/home/YOU/.local/share/pio-scaffold/.venv/bin/python3
+import sys
+sys.path.insert(0, "/home/YOU/.local/share/pio-scaffold")
+from pio_scaffold.cli import app
+app()
+EOF
+chmod +x ~/.local/bin/pio-scaffold
 ```
 
 Verify:
@@ -239,7 +246,7 @@ Presets store: `platform`, `board`, `framework`, `baud`, and `libs`. CLI flags t
 project-dir/
 ├── platformio.ini          # [env] + [env:usb] + [env:dap]
 └── src/
-    └── main.cpp            # Dual-core Arduino boilerplate (setup/loop + setup1/loop1)
+    └── main.cpp            # Arduino dual-core (setup/loop + setup1/loop1) or pico-sdk main()
 ```
 
 With `--git`:
@@ -258,10 +265,10 @@ With `--ci`:
 
 ```
 project-dir/
-├── platformio.ini          # [platformio] folder routing + [env] stm32cube config
+├── platformio.ini          # [platformio] folder routing + [env] + [env:{board_id}]
 ├── swo_trace.py            # OpenOCD SWO trace custom target (unless --no-swo)
 └── src/
-    └── main.cpp            # Single-core Arduino boilerplate
+    └── main.cpp            # Single-core HAL boilerplate (stm32{fam}xx_hal.h + HAL_Init)
 ```
 
 ### platformio.ini contents
@@ -282,8 +289,7 @@ monitor_filters = time, log2file
 
 ; Debug environment: Flashes via SWD DAPLink
 [env:dap]
-upload_protocol = cmsis-dap
-debug_tool = cmsis-dap
+; upload_protocol = cmsis-dap
 ```
 
 **stm32** (`pio-scaffold stm32` in CubeMX dir):
@@ -293,6 +299,7 @@ src_dir = Core/Src
 include_dir = Core/Inc
 
 [env]
+platform = ststm32
 board = genericSTM32F411CE
 framework = stm32cube
 upload_protocol = stlink
@@ -300,6 +307,8 @@ debug_tool = stlink
 monitor_speed = 115200
 monitor_filters = time, log2file
 extra_scripts = swo_trace.py
+
+[env:genericSTM32F411CE]
 ```
 
 ### SWO trace script

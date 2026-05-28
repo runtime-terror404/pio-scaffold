@@ -59,7 +59,10 @@ fi
 
 if [ -d "${INSTALL_DIR}" ]; then
     info "Updating existing installation at ${INSTALL_DIR}..."
-    git -C "${INSTALL_DIR}" pull --ff-only || warn "git pull failed — continuing with existing checkout"
+    git -C "${INSTALL_DIR}" fetch origin || warn "git fetch failed — continuing with existing checkout"
+    git -C "${INSTALL_DIR}" reset --hard origin/main 2>/dev/null || true
+    git -C "${INSTALL_DIR}" clean -fd 2>/dev/null || true
+    git -C "${INSTALL_DIR}" merge --ff-only origin/main || warn "git merge failed — continuing with existing checkout"
 else
     info "Cloning ${REPO_URL} → ${INSTALL_DIR}..."
     mkdir -p "$(dirname "${INSTALL_DIR}")"
@@ -69,12 +72,34 @@ fi
 # ── Set up virtual environment ────────────────────────────────────────────
 
 VENV_DIR="${INSTALL_DIR}/.venv"
+FORCE_VENV=0
+
+# Rebuild venv if Python version changed or requirements.txt is newer
+if [ -f "${VENV_DIR}/pyvenv.cfg" ]; then
+    VENV_PY=$(grep "^version" "${VENV_DIR}/pyvenv.cfg" 2>/dev/null | cut -d= -f2 | tr -d ' ')
+    HOST_PY=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    if [ "${VENV_PY}" != "${HOST_PY}" ]; then
+        warn "Python version changed (venv: ${VENV_PY}, host: ${HOST_PY}) — rebuilding venv"
+        rm -rf "${VENV_DIR}"
+        FORCE_VENV=1
+    elif [ "${INSTALL_DIR}/requirements.txt" -nt "${VENV_DIR}/pyvenv.cfg" ]; then
+        info "requirements.txt updated — reinstalling dependencies"
+        FORCE_VENV=1
+    fi
+fi
+
 if [ ! -d "${VENV_DIR}" ]; then
     info "Creating virtual environment at ${VENV_DIR}..."
     python3 -m venv "${VENV_DIR}" || abort "Failed to create venv"
+    FORCE_VENV=1
 fi
-info "Installing dependencies into venv..."
-"${VENV_DIR}/bin/pip" install -q -r "${INSTALL_DIR}/requirements.txt" || abort "Failed to install dependencies"
+
+if [ "${FORCE_VENV}" -eq 1 ]; then
+    info "Installing dependencies into venv..."
+    "${VENV_DIR}/bin/pip" install -q -r "${INSTALL_DIR}/requirements.txt" || abort "Failed to install dependencies"
+else
+    info "Dependencies up to date — skipped"
+fi
 info "venv — OK"
 
 # ── Install launcher into PATH ─────────────────────────────────────────────
