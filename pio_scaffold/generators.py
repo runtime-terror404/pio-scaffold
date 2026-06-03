@@ -12,6 +12,7 @@ GITIGNORE_CONTENT = """.pio/
 .vscode/ipch/
 __pycache__/
 *.pyc
+INSTRUCTIONS.md
 """
 
 CI_CONTENT = """name: PlatformIO CI
@@ -190,6 +191,86 @@ def generate_ci() -> str:
     return CI_CONTENT
 
 
+def generate_instructions_md(platform: Platform, config: dict) -> str:
+    if platform.key == "stm32":
+        return _instructions_stm32(config)
+    elif platform.key == "pico2":
+        return _instructions_pico2(config)
+    else:
+        raise ValueError(f"Unsupported platform: {platform.key}")
+
+
+def _instructions_stm32(config: dict) -> str:
+    board_id = config.get("board_id", "genericSTM32F411CE")
+    return f"""# Project Context
+
+This project was scaffolded by [pio-scaffold](https://github.com/runtime-terror404/pio-scaffold) — a CLI
+that converts STM32CubeMX projects into PlatformIO projects.
+
+## Project structure
+
+- **`platformio.ini`** — Read this first. It defines the build config, board,
+  framework, and dependencies. `src_dir` and `include_dir` point to the
+  CubeMX-generated source tree.
+- **`Core/Src/`** — Main source directory (CubeMX HAL code lives here)
+- **`Core/Inc/`** — Main include directory (CubeMX HAL headers live here)
+- **`swo_trace.py`** — OpenOCD SWO trace script (if enabled)
+
+## Framework
+
+This project uses **STM32Cube HAL** (`framework = stm32cube`,
+`board = {board_id}`). Write HAL APIs — `HAL_GPIO_WritePin()`,
+`HAL_UART_Transmit()`, `HAL_Delay()`, etc. — not Arduino-style code.
+Do not use `setup()`/`loop()`, `digitalWrite()`, or `Serial` unless the user
+explicitly asks to switch frameworks.
+
+## Adding libraries
+
+Use `lib_deps` in `platformio.ini`. To find libraries, use the **pio-hunt**
+skill — but verify findings are HAL-compatible, not Arduino-only. Many
+PlatformIO libraries target Arduino; they won't work here without porting.
+
+## Build
+
+```bash
+pio run
+pio run --target upload
+```
+"""
+
+
+def _instructions_pico2(config: dict) -> str:
+    framework = config.get("framework", "arduino")
+    return f"""# Project Context
+
+This project was scaffolded by [pio-scaffold](https://github.com/runtime-terror404/pio-scaffold).
+
+## Project structure
+
+- **`platformio.ini`** — Read this first. It defines the build config, board,
+  framework, and dependencies.
+- **`src/main.cpp`** — Main source file
+
+## Framework
+
+This project uses **{framework}** framework. Standard PlatformIO / {framework}
+conventions apply.
+
+## Adding libraries
+
+Use `lib_deps` in `platformio.ini`. To find libraries, use the **pio-hunt**
+skill — it searches the PlatformIO registry for compatible, well-rated
+libraries.
+
+## Build
+
+```bash
+pio run
+pio run --target upload
+```
+"""
+
+
 def write_project(platform: Platform, config: dict, dry_run: bool = False) -> list[Path]:
     output_dir = Path(config.get("output", "."))
     created: list[Path] = []
@@ -204,8 +285,12 @@ def write_project(platform: Platform, config: dict, dry_run: bool = False) -> li
     # platformio.ini
     _write(output_dir / "platformio.ini", generate_ini(platform, config))
 
-    # src/main.cpp
-    _write(output_dir / "src" / "main.cpp", generate_main_cpp(platform, config))
+    # INSTRUCTIONS.md — project guidance for AI assistants
+    _write(output_dir / "INSTRUCTIONS.md", generate_instructions_md(platform, config))
+
+    # src/main.cpp — only for pico2 (STM32 uses CubeMX sources in Core/Src)
+    if platform.key != "stm32":
+        _write(output_dir / "src" / "main.cpp", generate_main_cpp(platform, config))
 
     # Extra files (SWO script, etc.)
     for filename, content in generate_extras(platform, config).items():
